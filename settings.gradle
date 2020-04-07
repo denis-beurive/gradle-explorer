@@ -1,0 +1,114 @@
+/**
+ * This script is embedded into a class (which name changes each time Gradle is invoked).
+ * Example of class name: "settings_b0j4yjuhmbkj9592u1z6fmfuz"
+ * This class does not contain any "main" method. Thus, it cannot be executed.
+ *
+ * Run "gradle --info" to activate the logging.
+ *
+ * See https://docs.gradle.org/current/javadoc/org/gradle/api/Project.html
+ * << During build initialisation, Gradle assembles a Project object for each project which
+ *    is to participate in the build, as follows:
+ *
+ *    - Create a Settings instance for the build.
+ *    - Evaluate the "settings.gradle" script, if present, against the Settings object to
+ *      configure it.
+ *    - Use the configured Settings object to create the hierarchy of Project instances.
+ *    - Finally, evaluate each Project by executing its "build.gradle" file, if present,
+ *      against the project. The projects are evaluated in breadth-wise order, such that a
+ *      project is evaluated before its child projects. This order can be overridden by calling
+ *      evaluationDependsOnChildren() or by adding an explicit evaluation dependency using
+ *      evaluationDependsOn(String).>>
+ *
+ * ==> This script (settings.gradle) is used to configure a <Settings> object.
+ *     The <Settings> object implements the interface <org.gradle.api.initialization.Settings>.
+ *     In this interface you can find the method <getRootProject()> that returns <rootProject>.
+ *
+ *     Please note that the instance of <Settings> is not created within this script (settings.gradle).
+ *     This explains why you cannot find the interface <Settings> within the implemented list of
+ *     interfaces that appear in the class hierarchy build from the object <this>.
+ */
+
+import java.lang.reflect.Method
+
+// See org.gradle.api.initialization.Settings::getRootProject()
+rootProject.name = 'gradle1'
+
+// =============================================================================
+// Custom code
+// =============================================================================
+
+/**
+ * Create a string the represents the list of parameters required for a given method.
+ * @param inMethod The method.
+ * @return A string the represents the list of parameters required for a given method.
+ */
+
+String getParams(Method inMethod) {
+    List<String> params = []
+    inMethod.parameters.each {
+        params.add(it.type.name  + " " + it.name)
+    }
+    return params.join(", ")
+}
+
+/**
+ * Create a string that represents all the interfaces extended by a given interface.
+ * @param inInterface The interface.
+ * @param inBuilder The string builder.
+ */
+
+void getAllInterfaces(Class inInterface, StringBuilder inBuilder) {
+
+    inBuilder << "      [I] " + inInterface.name + "\n"
+    inInterface.declaredMethods.each {
+        if (it.getDeclaringClass() != inInterface) return
+        inBuilder << "        [M] " + it.name + "(${it.parameterCount > 0 ? it.parameterCount + ': ' : ''}${getParams(it)})\n"
+    }
+
+    inInterface.interfaces.each {
+        getAllInterfaces(it, inBuilder)
+    }
+}
+
+/**
+ * Create a string that represents all the super classes, interfaces and methods of a given class.
+ * @param inClass The class.
+ * @param inBuilder The string builder.
+ */
+
+void getAllSuperClasses(Class inClass, StringBuilder inBuilder)  {
+    if (null == inClass) return
+
+    inBuilder << "    * " + inClass.getName() + "\n"
+    inClass.declaredMethods.each {
+        if (it.getDeclaringClass() != inClass) return
+        if (it.name.matches('^\\$.+')) return
+        if (it.name.matches("^super\\\$.+")) return
+        inBuilder << "        [M] " + it.name + "(${it.parameterCount > 0 ? it.parameterCount + ': ' : ''}${getParams(it)})\n"
+    }
+
+    inClass.interfaces.each {
+        getAllInterfaces(it, inBuilder)
+    }
+
+    getAllSuperClasses(inClass.getSuperclass(), inBuilder)
+}
+
+logger.info({
+    StringBuilder result = new StringBuilder()
+    result << "=========================================================\n"
+    result << "=                    settings.gradle                    =\n"
+    result << "=========================================================\n\n"
+    result << "Information about <this>: ${this.getClass().name}\n"
+    result << "<this> implements <Settings> ? " + (this instanceof Settings ? "yes" : "no") + "\n"
+    getAllSuperClasses(this.getClass(), result)
+    result << ""
+    result << "  Does <this> have an immediately enclosing class ? " + (null == this.class.enclosingClass ? "no" : "yes") + "\n"
+    result << "Main method found in: ${System.getProperty("sun.java.command")}\n"
+    getAllSuperClasses(org.gradle.launcher.daemon.bootstrap.GradleDaemon.class, result)
+    result << ""
+    result << "<GradleDaemon.main> uses <org.gradle.launcher.daemon.bootstrap.DaemonMain>:\n"
+    getAllSuperClasses(org.gradle.launcher.daemon.bootstrap.DaemonMain.class, result)
+    result << "\n\n"
+    result.toString()
+}.call())

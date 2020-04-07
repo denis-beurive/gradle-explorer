@@ -1,0 +1,227 @@
+import java.lang.reflect.Method
+
+/**
+ * This script is embedded into a class (which name changes each time Gradle is invoked).
+ * Example of class name: "build_2vd8uxaxzlwimbqukyqr82d63"
+ * This class does not contain any "main" method. Thus, it cannot be executed.
+ *
+ * Run "gradle --info" to activate the logging.
+ *
+ * Get all tasks for this project:
+ *
+ *      gradle tasks
+ *
+ * Execute the task "hello":
+ *
+ *      gradle hello
+ *
+ * See https://docs.gradle.org/current/userguide/writing_build_scripts.html
+ * << When Gradle executes a Groovy build script (.gradle), it compiles the script into
+ *    a class which implements Script. This means that all of the properties and methods
+ *    declared by the Script interface are available in your script. >>
+ *
+ * See https://docs.gradle.org/current/javadoc/org/gradle/api/Project.html
+ * << During build initialisation, Gradle assembles a Project object for each project which
+ *    is to participate in the build, as follows:
+ *
+ *    - Create a Settings instance for the build.
+ *    - Evaluate the "settings.gradle" script, if present, against the Settings object to
+ *      configure it.
+ *    - Use the configured Settings object to create the hierarchy of Project instances.
+ *    - Finally, evaluate each Project by executing its "build.gradle" file, if present,
+ *      against the project. The projects are evaluated in breadth-wise order, such that a
+ *      project is evaluated before its child projects. This order can be overridden by calling
+ *      evaluationDependsOnChildren() or by adding an explicit evaluation dependency using
+ *      evaluationDependsOn(String).>>
+ *
+ * ==> An instance of <Project> is created (and configured using the <Settings> object previously
+ *     created). The interface <Project> (org.gradle.api.Project) defines all the methods you use
+ *     in this file (build.gradle), except the method <plugins()>.
+ *     For example: <void repositories(Closure var1)>
+ *     Then this script (build.gradle) is evaluated to configure the previously created <Project>
+ *     instance.
+ *
+ *     Please note that the instance of <Project> is not created within this script (build.gradle).
+ *     This explains why you cannot find the interface <Project> within the implemented list of interfaces that appear
+ *     in the class hierarchy build from the object <this>.
+ *
+ * The project layout is defined here:
+ * https://docs.gradle.org/current/userguide/java_plugin.html#sec:java_project_layout
+ *
+ * **WARNING**: this script **MUST** begin with "plugins { ... }".
+ *              See https://docs.gradle.org/6.3/userguide/plugins.html#plugins_dsl_limitations
+ *              << This requires that plugins be specified in a way that Gradle can
+ *                 easily and quickly extract, **before** executing the rest of the
+ *                 build script. >>
+ */
+
+/**
+ * Method: org.gradle.plugin.use.internal.PluginsAwareScript::plugins()
+ *
+ * This method must be the first instruction of the script.
+ */
+
+plugins {
+    /**
+     * See https://docs.gradle.org/6.3/userguide/plugins.html#sec:constrained_syntax
+     * << The plugins {} block does not support arbitrary code. It is constrained,
+     *    in order to be idempotent (produce the same result every time) and side
+     *    effect free (safe for Gradle to execute at any time). >>
+     *
+     * Here, we apply the JAVA plugin by calling the method `PluginDependencySpec id(String var1)`
+     * defined by the interface `PluginDependenciesSpec`.
+     *
+     * The JAVA plugin: https://docs.gradle.org/current/userguide/java_plugin.html
+     */
+    id 'java'
+}
+
+// Call the method `void setGroup(Object group)` defined by the interface `Project`.
+group 'org.example'
+
+// Call the method `void setVersion(Object version)` defined by the interface `Project`.
+version '1.0-SNAPSHOT'
+
+// Call the method `void setSourceCompatibility(Object var1)` defined by the interface `JavaPluginConvention`.
+sourceCompatibility = 1.8
+
+// Call the method `void repositories(Closure configureClosure)` defined by the interface `Project`.
+repositories {
+    mavenCentral()
+}
+
+// Call the method `void dependencies(Closure configureClosure)` defined by the interface `Project`.
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}
+
+// Customized task.
+// See <org.gradle.api.Task::register(...)>
+// TaskProvider<Task> register(String var1, Action<? super Task> var2) throws InvalidUserDataException;
+tasks.register("hello", {
+    // We are in a closure. The delegate is an instance of
+    // <org.gradle.api.DefaultTask_Decorated>.
+    // This delegate implements the interface <org.gradle.api.Task>.
+    // And <org.gradle.api.Task> implements the method <doLast>.
+    StringBuilder sbuilder = new StringBuilder()
+    println("======================================================")
+    println("hello: init")
+    println("<this> is <" + this.class.name + ">")
+    println("<owner> is <" + owner.class.name + ">")
+    println("<delegate> is <" + delegate.class.name + ">")
+    println("Does <delegate> implement <Task> ? " +
+            (delegate instanceof Task ? "yes" : "no"))
+    println("Does <delegate> implement <doLast()> ? " +
+            (null != Task.declaredMethods.find { it.name == "doLast" } ? "yes" : "no"))
+    println("======================================================")
+    getAllSuperClasses(delegate.class, sbuilder)
+
+    doFirst() {
+        println("======================================================")
+        println("hello:doFirst()")
+        println("======================================================")
+    }
+
+    // You can, **and should**, omit "delegate." (the delegation strategy is Closure.DELEGATE_FIRST).
+    // "delegate" implements the interface "org.gradle.api.Task".
+    // See: https://groovy-lang.org/closures.html#_delegation_strategy_2
+
+    delegate.doLast {
+        StringBuilder builder = new StringBuilder()
+        println("======================================================")
+        println("hello:doLast()")
+        builder << "Execute the task <hello>\n"
+        builder << "<this> is <" + this.class.name + ">\n"
+        builder << "<owner> is <" + owner.class.name + ">\n"
+        builder << "<delegate> is <" + delegate.class.name + ">"
+        println builder.toString()
+        println("======================================================")
+    }
+})
+
+// Another way to define a task.
+task hi {
+    doLast {
+        println "hi!"
+    }
+}
+
+// =============================================================================
+// Custom code
+// =============================================================================
+
+/**
+ * Create a string the represents the list of parameters required for a given method.
+ * @param inMethod The method.
+ * @return A string the represents the list of parameters required for a given method.
+ */
+
+String getParams(Method inMethod) {
+    List<String> params = []
+    inMethod.parameters.each {
+        params.add(it.type.name  + " " + it.name)
+    }
+    return params.join(", ")
+}
+
+/**
+ * Create a string that represents all the interfaces extended by a given interface.
+ * @param inInterface The interface.
+ * @param inBuilder The string builder.
+ */
+
+void getAllInterfaces(Class inInterface, StringBuilder inBuilder) {
+
+    inBuilder << "      [I] " + inInterface.name + "\n"
+    inInterface.declaredMethods.each {
+        if (it.getDeclaringClass() != inInterface) return
+        inBuilder << "        [M] " + it.name + "(${it.parameterCount > 0 ? it.parameterCount + ': ' : ''}${getParams(it)})\n"
+    }
+
+    inInterface.interfaces.each {
+        getAllInterfaces(it, inBuilder)
+    }
+}
+
+/**
+ * Create a string that represents all the super classes, interfaces and methods of a given class.
+ * @param inClass The class.
+ * @param inBuilder The string builder.
+ */
+
+void getAllSuperClasses(Class inClass, StringBuilder inBuilder)  {
+    if (null == inClass) return
+
+    inBuilder << "    * " + inClass.getName() + "\n"
+    inClass.declaredMethods.each {
+        if (it.getDeclaringClass() != inClass) return
+        if (it.name.matches('^\\$.+')) return
+        if (it.name.matches("^super\\\$.+")) return
+        inBuilder << "        [M] " + it.name + "(${it.parameterCount > 0 ? it.parameterCount + ': ' : ''}${getParams(it)})\n"
+    }
+
+    inClass.interfaces.each {
+        getAllInterfaces(it, inBuilder)
+    }
+
+    getAllSuperClasses(inClass.getSuperclass(), inBuilder)
+}
+
+logger.info({
+    StringBuilder result = new StringBuilder()
+    result << "=========================================================\n"
+    result << "=                       build.gradle                    =\n"
+    result << "=========================================================\n\n"
+    result << "Information about <this>: ${this.getClass().name}\n"
+    result << "<this> implements <Project> ? " + (this instanceof Project ? "yes" : "no") + "\n"
+    getAllSuperClasses(this.getClass(), result)
+    result << "\n"
+    result << "  Does <this> have an immediately enclosing class ? " + (null == this.class.enclosingClass ? "no" : "yes") + "\n"
+    result << "Main method found in: ${System.getProperty("sun.java.command")}\n"
+    getAllSuperClasses(org.gradle.launcher.daemon.bootstrap.GradleDaemon.class, result)
+    result << "\n"
+    result << "<GradleDaemon.main> uses <org.gradle.launcher.daemon.bootstrap.DaemonMain>:\n"
+    getAllSuperClasses(org.gradle.launcher.daemon.bootstrap.DaemonMain.class, result)
+    result << "\n\n"
+    result.toString()
+}.call())
