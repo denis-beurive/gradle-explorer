@@ -80,7 +80,9 @@ plugins {
 group 'org.example'
 
 // Call the method `void setVersion(Object version)` defined by the interface `Project`.
-version '1.0-SNAPSHOT'
+//  version '1.0-SNAPSHOT'
+this.setVersion('1.0-SNAPSHOT')
+
 
 // Call the method `void setSourceCompatibility(Object var1)` defined by the interface `JavaPluginConvention`.
 sourceCompatibility = 1.8
@@ -98,7 +100,7 @@ dependencies {
 // Customized task.
 // See <org.gradle.api.Task::register(...)>
 // TaskProvider<Task> register(String var1, Action<? super Task> var2) throws InvalidUserDataException;
-tasks.register("hello", {
+this.tasks.register "hello", {
     // We are in a closure. The delegate is an instance of
     // <org.gradle.api.DefaultTask_Decorated>.
     // This delegate implements the interface <org.gradle.api.Task>.
@@ -137,7 +139,7 @@ tasks.register("hello", {
         println builder.toString()
         println("======================================================")
     }
-})
+}
 
 // Another way to define a task.
 task hi {
