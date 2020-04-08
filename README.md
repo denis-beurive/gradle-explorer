@@ -80,7 +80,20 @@ Links:
 
 ## settings.gradle
 
+First an instance of a class that implements the interface
+[Settings](https://docs.gradle.org/current/javadoc/org/gradle/api/initialization/Settings.html) is created by Gradle.
 
+> Please note that the interface `Settings` defines the method `getRootProject()`.
+> Also note that this instance is created by Gradle, and not by the script `settings.gradle`.
+
+Then, the script `settings.gradle` is converted into a class which name looks something like `settings_b0j4yjuhmbkj9592u1z6fmfuz`.
+This class is used to configure the previously instantiated object (which class implements the `Settings` interface).
+
+When you write:
+
+    rootProject.name = 'gradle1'
+
+It executes the method `org.gradle.api.initialization.Settings::getRootProject()`.
 
 # Gradle execution
 
